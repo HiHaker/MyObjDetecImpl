@@ -3,6 +3,7 @@ import torch
 """
 计算IoU
 参数有预测的bbox，真实的bbox，bbox的形式（是corner还是midpoint）
+boxes_pred：[x1, x2, y1, y2] or [x, y, w, h]
 """
 def intersection_over_union(boxes_pred, boxes_label, boxes_format="midpoint"):
     # 根据box参数的不同形式来进行处理
@@ -40,7 +41,9 @@ def intersection_over_union(boxes_pred, boxes_label, boxes_format="midpoint"):
     intersection = (union_x2 - union_x1).clamp(0) * (union_y2 - union_y1).clamp(0)
 
     # 计算两个框的面积
+    # 预测框的面积
     area_pred = (box_pred_x2 - box_pred_x1) * (box_pred_y2 - box_pred_y1)
+    # GT框的面积
     area_label = (box_label_x2 - box_label_x1) * (box_label_y2 - box_label_y1)
 
     return intersection / (area_pred + area_label - intersection + 1e-6)

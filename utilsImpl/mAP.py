@@ -6,7 +6,7 @@ from iou import intersection_over_union
 计算mAP
 参数：
 pred_boxes：预测框
-true_boxes：GT
+true_boxes：真实框GT
 iou_threshold：iou阈值
 box_format：box参数的格式，center或corner
 num_class：类别数
@@ -24,13 +24,14 @@ def mean_average_precision(
 
     # 对于每一个物体类别，要计算它的AP
     for c in range(num_class):
-        # 得到当前物体类别的预测框还有GT
+        # 得到当前物体类别的预测框
         detections = [detection for detection in pred_boxes if detection[1] == c]
         # detections = []
         # for detection in pred_boxes:
         #     if detection[1] == c:
         #         detections.append(detection)
 
+        # 得到当前物体类别的GT框
         ground_truths = [true_box for true_box in true_boxes if true_box[1] == c]
         # ground_truths = []
         # for true_box in true_boxes:
@@ -40,6 +41,7 @@ def mean_average_precision(
         # 统计当前这个类别每张图片的GT预测框的数量
         # img 0 has 3 bboxes
         # img 1 has 5 bboxes
+        # amount_bboxes: {0: 3, 1: 5}
         amount_bboxes = Counter([gt[0] for gt in ground_truths])
 
         for key, val in amount_bboxes.items():
@@ -49,21 +51,20 @@ def mean_average_precision(
         # amount_bboxes: {0: torch.tensor([0,0,0]), 1: torch.tensor([0,0,0,0,0])}
 
         # step2
-        # 根据置信度进行降序排序，并给每一个框赋值TP/FP
+        # 根据置信度进行降序排序
         detections.sort(key=lambda x: x[2], reverse=True)
         TP = torch.zeros(len(detections))
         FP = torch.zeros(len(detections))
         total_true_bboxes = len(ground_truths)
 
         # 遍历每一个预测框
+        # 并给每一个框赋值TP / FP
         for detection_idx, detection in enumerate(detections):
             # 找出当前预测框的图片对应的所有GT
             ground_truth_img = [
                 bbox for bbox in ground_truths if bbox[0] == detection[0]
             ]
 
-            # 所有GT的数量
-            num_gts = len(ground_truth_img)
             best_iou = 0
 
             # 计算当前预测框和每一个GT的IOU
@@ -103,6 +104,7 @@ def mean_average_precision(
         # 计算精确度和召回率
         recalls = TP_cumsum / (total_true_bboxes + epsilon)
         precisions = torch.divide(TP_cumsum, (TP_cumsum + FP_cumsum + epsilon))
+        # 加上0，1这个点
         precisions = torch.cat(torch.tensor([1]), precisions)
         recalls = torch.cat(torch.tensor([0]), recalls)
         average_precisions.append(torch.trapz(precisions, recalls))
